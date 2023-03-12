@@ -29,5 +29,12 @@
             @if ($project->category)
                 <span>Category: <a href="/categories/{{ $project->category->slug }}">{{ $project->category->name }}</a></span>
             @endif
+            <br>
+            @if ($project->tags && count($project->tags) > 0)
+                <span>Tags:</span>
+            @foreach ($project->tags as $projectTag)
+                <a href="/tags/{{ $projectTag->slug }}">{{ $projectTag->name }}</a>
+            @endforeach
+            @endif
         </footer>
     </div>

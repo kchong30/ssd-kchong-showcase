@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Category;
+use App\Models\Tag;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,10 @@ use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
+    public function home(){
+        return view('home')
+        ->with('projects', Project::all()->slice(0,1));
+    }
     public function index()
     {
         return view('projects.index')
@@ -38,10 +43,21 @@ class ProjectController extends Controller
 
     }
 
+    public function listByTag(Tag $tag)
+    {
+        return view('projects.index-tags')
+        ->with('projects', $tag->projects)
+        ->with('showTitle', 'true')
+        ->with('showReturnLink', 'true')
+        ->with('Tag', $tag->name);
+    }
+
+
     public function create() {
         return view('admin.projects.create')
         ->with('project', null)
-        ->with('categories', Category::all());
+        ->with('categories', Category::all())
+        ->with('tags', Tag::all());
     }
 
     public function store(Request $request) {
@@ -54,6 +70,7 @@ class ProjectController extends Controller
             'category_id' => ['nullable','sometimes','exists:categories,id'],
             'image' => ['nullable','sometimes','image','mimes:jpg,png,jpeg,gif,svg','max:2048','dimensions:max_width=1200'],
             'thumb' => ['nullable','sometimes','image','mimes:jpg,png,jpeg,gif,svg','max:1024','dimensions:max_width=600'],
+            'tags' => ['nullable', 'sometimes', 'exists:tags,id']
         ]);
 
         // Save upload in public storage and set path attributes 
@@ -64,8 +81,10 @@ class ProjectController extends Controller
 
 
         $attributes['slug'] = Str::slug($attributes['title']);
+        $project->tags()->sync($attributes['tags']);
 
-        Project::create($attributes);
+
+        Project::create($attributes)->tags()->attach($attributes['tags']);
         
         session()->flash('success', 'Project Created Successfully');
 
@@ -76,7 +95,8 @@ class ProjectController extends Controller
     public function edit(Project $project) {
         return view('admin.projects.create')
         ->with('project', $project)
-        ->with('categories', Category::all());
+        ->with('categories', Category::all())
+        ->with('tags', Tag::all());
     }
 
     public function update(Project $project, Request $request){
@@ -87,6 +107,9 @@ class ProjectController extends Controller
             'url' => ['nullable','sometimes','url'],
             'published_date' => ['nullable','sometimes','date'],
             'category_id' => ['nullable','sometimes','exists:categories,id'],
+            'image' => ['nullable','sometimes','image','mimes:jpg,png,jpeg,gif,svg','max:2048','dimensions:max_width=1200'],
+            'thumb' => ['nullable','sometimes','image','mimes:jpg,png,jpeg,gif,svg','max:1024','dimensions:max_width=600'],
+            'tags' => ['nullable', 'sometimes', 'exists:tags,id']
         ]);
 
         // Save upload in public storage and set path attributes 
@@ -96,6 +119,7 @@ class ProjectController extends Controller
         $attributes['thumb'] = $thumb_path;
 
         $attributes['slug'] = Str::slug($attributes['title']);
+        $project->tags()->sync($attributes['tags']);
         $project->update($attributes);
         session()->flash('success', 'Project Updated Successfully');
         return redirect('/admin');
@@ -109,5 +133,11 @@ class ProjectController extends Controller
 
         // Redirect to the Admin Dashboard
         return redirect('/admin');
+    }
+
+    public function getProjectsJSON()
+    {
+        $projects = Project::with(['category','tags'])->get();
+        return response()->json($projects);
     }
 }

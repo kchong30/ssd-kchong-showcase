@@ -29,7 +29,7 @@
     </p>
 </div>
 @endif
-<body class="font-nunito">
+<body class="font-nunito h-screen">
     {{ $content }} 
 </body>
 <x-footer></x-footer>
